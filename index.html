@@ -159,18 +159,74 @@
     margin: 16px 0;
   }
 
-  .gif-container {
+  .photo-carousel {
     margin: 20px auto;
+    position: relative;
+    max-width: 300px;
     border-radius: 16px;
     overflow: hidden;
-    max-width: 280px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    aspect-ratio: 3/4;
+    background: #f0f0f0;
   }
 
-  .gif-container img {
+  .photo-carousel img {
+    position: absolute;
+    top: 0; left: 0;
     width: 100%;
-    display: block;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.8s ease;
   }
+
+  .photo-carousel img.active {
+    opacity: 1;
+  }
+
+  .photo-carousel .dots {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    z-index: 2;
+  }
+
+  .photo-carousel .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+
+  .photo-carousel .dot.active {
+    background: white;
+  }
+
+  .carousel-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.7);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .carousel-nav.prev { left: 8px; }
+  .carousel-nav.next { right: 8px; }
 
   .love-text {
     font-family: 'Playfair Display', serif;
@@ -258,8 +314,17 @@
       <span class="yay-emoji">✨💖</span>
     </div>
     <p class="best-decision">Лучшее решение ever 🥹</p>
-    <div class="gif-container">
-      <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWpmcHE0ZzhmMGZ2djdvNmR0Y2V3cWE2Nml1Y3VsZ21qZnVjMW1tZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oEjI4sFlp73fvEYgw/giphy.gif" alt="Love" />
+    <div class="photo-carousel" id="photoCarousel">
+      <img src="photos/6.jpg" alt="" class="active" />
+      <img src="photos/7.jpg" alt="" />
+      <img src="photos/1.jpg" alt="" />
+      <img src="photos/4.jpg" alt="" />
+      <img src="photos/3.jpg" alt="" />
+      <img src="photos/5.jpg" alt="" />
+      <img src="photos/2.jpg" alt="" />
+      <button class="carousel-nav prev" onclick="carouselPrev()">‹</button>
+      <button class="carousel-nav next" onclick="carouselNext()">›</button>
+      <div class="dots" id="carouselDots"></div>
     </div>
     <p class="love-text">Я тебя люблю <span class="heart">❤️</span></p>
   </div>
@@ -363,6 +428,7 @@ function sayYes() {
   document.getElementById('yesScreen').classList.add('active');
   document.body.classList.add('yes-mode');
   launchConfetti();
+  autoSlide = setInterval(() => goToPhoto(currentPhoto + 1), 3500);
   // Extra hearts burst
   for (let i = 0; i < 30; i++) setTimeout(createHeart, i * 100);
 }
@@ -436,6 +502,47 @@ function launchConfetti() {
     animate();
   }, 800);
 }
+
+// Photo carousel
+let currentPhoto = 0;
+const photos = document.querySelectorAll('#photoCarousel img');
+const dotsContainer = document.getElementById('carouselDots');
+let autoSlide;
+
+// Create dots
+photos.forEach((_, i) => {
+  const dot = document.createElement('span');
+  dot.className = 'dot' + (i === 0 ? ' active' : '');
+  dot.onclick = () => goToPhoto(i);
+  dotsContainer.appendChild(dot);
+});
+
+function goToPhoto(idx) {
+  photos[currentPhoto].classList.remove('active');
+  dotsContainer.children[currentPhoto].classList.remove('active');
+  currentPhoto = (idx + photos.length) % photos.length;
+  photos[currentPhoto].classList.add('active');
+  dotsContainer.children[currentPhoto].classList.add('active');
+}
+
+function carouselNext() { goToPhoto(currentPhoto + 1); resetAutoSlide(); }
+function carouselPrev() { goToPhoto(currentPhoto - 1); resetAutoSlide(); }
+
+function resetAutoSlide() {
+  clearInterval(autoSlide);
+  autoSlide = setInterval(() => goToPhoto(currentPhoto + 1), 3500);
+}
+
+// Swipe support
+let touchStartX = 0;
+const carousel = document.getElementById('photoCarousel');
+carousel.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+carousel.addEventListener('touchend', e => {
+  const diff = touchStartX - e.changedTouches[0].clientX;
+  if (Math.abs(diff) > 40) {
+    diff > 0 ? carouselNext() : carouselPrev();
+  }
+});
 
 window.addEventListener('resize', () => {
   const c = document.getElementById('confetti');
